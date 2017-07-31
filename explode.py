@@ -20,16 +20,16 @@ class Tape(list):
         return super().__setitem__(index, item)
 
     """def insert(self, index, item, origin=None):
-        for mover_ in movers:
-            if (not origin or origin is not mover_) and mover_.index >= index:
-                mover_.index += 1
+        for explorer_ in explorers:
+            if (not origin or origin is not explorer_) and explorer_.index >= index:
+                explorer_.index += 1
 
         super().insert(index, item)"""
 
     def insert(self, index, item):
-        for mover_ in movers:
-            if mover_.index_ >= index:
-                mover_.index_ += 1
+        for explorer_ in explorers:
+            if explorer_.index_ >= index:
+                explorer_.index_ += 1
 
         super().insert(index, item)
 
@@ -39,10 +39,11 @@ NONE = " "
 
 TYPE = "TYPE"
 MODIFY = "&"
+EXTEND = "%"
 WRITE = "="
-EXTEND = "*"
+OVERWRITE = "*"
 INSERT = "@"
-TYPES = (MODIFY, WRITE, EXTEND, INSERT)
+TYPES = (MODIFY, EXTEND, WRITE, OVERWRITE, INSERT)
 
 DIRECTION = "DIRECTION"
 UP = "^"
@@ -51,12 +52,12 @@ BOTH = "|"
 DIRECTIONS = (UP, DOWN, BOTH)
 
 ACTION = "ACTION"
-INCREMENT = "+"
-DECREMENT = "-"
+ADD = "+"
+SUBTRACT = "-"
 WAVE = "~"
 INCREASING = "/"
 DECREASING = "\\"
-ACTIONS = (INCREMENT, DECREMENT, WAVE, INCREASING, DECREASING)
+ACTIONS = (ADD, SUBTRACT, WAVE, INCREASING, DECREASING)
 
 SOURCE = "SOURCE"
 INPUT = "?"
@@ -151,8 +152,8 @@ class LineParser:
         else:
             raise Exception("Incorrect token found: looking for {}, found {} | {} at {}".format(type_, self.token.type, self.token.val, self.liner.pos))
 
-    def get_movers(self, index):
-        return_movers = []
+    def get_explorers(self, index):
+        return_explorers = []
 
         while self.token.type == TYPE:
             # source_text = None
@@ -201,25 +202,25 @@ class LineParser:
 
             if p["direction"] == BOTH:
                 del p["direction"]
-                new_movers = [Mover(direction=UP, **p), Mover(direction=DOWN, **p)]
+                new_explorers = [Explorer(direction=UP, **p), Explorer(direction=DOWN, **p)]
             else:
-                new_movers = [Mover(**p)]
+                new_explorers = [Explorer(**p)]
 
             if p["queue"] == WAIT:
-                return_movers[-1].set_next(new_movers)
+                return_explorers[-1].set_next(new_explorers)
             elif p["queue"] == LAST:
-                global last_movers
-                last_movers += new_movers
+                global last_explorers
+                last_explorers += new_explorers
             else:
-                return_movers += new_movers
+                return_explorers += new_explorers
 
-        return return_movers
+        return return_explorers
 
     def __repr__(self):
         return "LineParser({},{})".format(self.liner, self.token)
 
 
-class Mover:
+class Explorer:
     def __init__(self, index, type_, duration, direction, delay, action, source_, amplitude, queue, jump):
         self.index_ = index
         self.type = MODIFY if type_ == NONE else type_
@@ -229,7 +230,7 @@ class Mover:
         self.direction = DOWN if direction == NONE else direction
         self.delay = 0 if delay == NONE else delay
 
-        self.action = INCREMENT if action == NONE else action
+        self.action = ADD if action == NONE else action
         self.previous = 0
         self.wave_index = 0
 
@@ -258,11 +259,11 @@ class Mover:
         elif self.amplitude:
             amp = self.amplitude
         else:
-            raise Exception("Mover {} has no source or amplitude".format(self))
+            raise Exception("Explorer {} has no source or amplitude".format(self))
 
-        if self.action == INCREMENT:
+        if self.action == ADD:
             return amp
-        elif self.action == DECREMENT:
+        elif self.action == SUBTRACT:
             return -amp
         elif self.action == INCREASING:
             self.previous += amp
@@ -297,22 +298,27 @@ class Mover:
 
                 if self.type == MODIFY:
                     tape[self.index_] = ASCII[ASCII.index(tape[self.index_]) + modification]
+                elif self.type == EXTEND:
+                    if 0 <= self.index_ < len(tape):
+                        tape[self.index_] = ASCII[ASCII.index(tape[self.index_]) + modification]
+                    else:
+                        tape.insert(self.index_, ASCII[modification])
                 elif self.type == WRITE:
                     tape[self.index_] = ASCII[modification]
-                elif self.type == EXTEND:
-                    if 0 <= self.index_ <= len(tape):
+                elif self.type == OVERWRITE:
+                    if 0 <= self.index_ < len(tape):
                         tape[self.index_] = ASCII[modification]
                     else:
                         tape.insert(self.index_, ASCII[modification])
                 elif self.type == INSERT:
                     if self.has_written:
                         tape.insert(self.index_, ASCII[modification])
+
+                        if self.direction == DOWN:
+                            self.index_ -= 1
                     else:
                         tape[self.index_] = ASCII[modification]
                         self.has_written = True
-
-                    if self.direction == DOWN:
-                        self.index_ -= 1
 
                 if self.direction == UP:
                     self.index_ -= self.jump
@@ -323,14 +329,14 @@ class Mover:
 
     def destroy(self):
         if self.next:
-            index = movers.index(self)
-            movers.remove(self)
-            movers[index:index] = self.next
+            index = explorers.index(self)
+            explorers.remove(self)
+            explorers[index:index] = self.next
         else:
-            movers.remove(self)
+            explorers.remove(self)
 
     def __repr__(self):
-        return "Mover(index={},type_='{}',duration={},direction='{}',delay={},action='{}',source='{}',aplitude={},queue='{}',jump={},next={})"\
+        return "Explorer(index={},type_='{}',duration={},direction='{}',delay={},action='{}',source='{}',aplitude={},queue='{}',jump={},next={})"\
             .format(self.index_, self.type, self.duration, self.direction, self.delay, self.action, self.source, self.amplitude, self.queue, self.jump, self.next)
 
 
@@ -357,7 +363,7 @@ def to_dec(bomb):
     return dec
 
 bombs = """0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"""
-ASCII = ImmutableTape(""" !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~""")
+ASCII = ImmutableTape(""" !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~\n""")
 length = len(bombs)
 
 try:
@@ -380,24 +386,24 @@ for i in range(len(lines)):
 
 tape = Tape(list(main))
 
-last_movers = []
-movers = []
+last_explorers = []
+explorers = []
 last_used = False
 
 for j in range(len(lines)):
     liner = Liner(lines[j])
     parser = LineParser(liner)
-    movers += parser.get_movers(j)
+    explorers += parser.get_explorers(j)
 
-for tick in range(100):
-    if not len(movers):
+while True:
+    if not len(explorers):
         if last_used:
             break
         else:
-            movers = last_movers
+            explorers = last_explorers
             last_used = True
 
-    for mover in movers:
-        mover.tick()
+    for explorer in explorers:
+        explorer.tick()
 
 print("".join(tape))
