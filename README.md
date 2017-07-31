@@ -26,7 +26,7 @@ Any empty line becomes a space.
 
 ##### Manipulating the Tape
 
-The tape can contain the printable ASCII characters and newline. Each character's index in the following string is it's numeric value:
+The tape can contain the printable ASCII characters and newline. Each character's numeric value is its index in the following string:
 
 ```
  !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
@@ -47,7 +47,7 @@ That means that decimal `1` is base-62 `1`, decimal `10` is base-62 `a`, decimal
 
 ## Ticks
 
-Time in Explore is measured in ticks. Each tick notifies each active Explorer, in the order they were created. The program terminates when all Explorers are completed.
+Time in Explode is measured in ticks. Each tick notifies each active Explorer, in the order they were created. The program terminates when all Explorers are completed.
 
 ## Explorers
 
