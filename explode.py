@@ -141,6 +141,8 @@ class Liner:
         return "Liner('{}',{},'{}')".format(self.line, self.pos, self.cur)
 
 
+EXPLORER_ORDER = (TYPE, BOMB, DIRECTION, BOMB, ACTION, (SOURCE, BOMB), QUEUE, BOMB)
+STRING_ORDER = ("type_", "duration", "direction", "delay", "action", ("source_", "amplitude"), "queue", "jump")
 class LineParser:
     def __init__(self, liner_):
         self.liner = liner_
@@ -160,45 +162,39 @@ class LineParser:
 
             p = dict(
                 index=index,
-                type_=None,
-                duration=None,
-                direction=None,
-                delay=None,
-                action=None,
-                source_=None,
-                amplitude=None,
-                queue=None,
-                jump=None
+                type_=NONE,
+                duration=NONE,
+                direction=NONE,
+                delay=NONE,
+                action=NONE,
+                source_=NONE,
+                amplitude=NONE,
+                queue=NONE,
+                jump=NONE
             )
 
-            p["type_"] = self.token.val
-            self.eat(TYPE)
-            p["duration"] = self.token.val
-            self.eat(BOMB)
-            p["direction"] = self.token.val
-            self.eat(DIRECTION)
-            p["delay"] = self.token.val
-            self.eat(BOMB)
-            p["action"] = self.token.val
-            self.eat(ACTION)
+            for i in range(len(EXPLORER_ORDER)):
+                if i > 1 and (self.token.type == TYPE or self.token.type == EOL):
+                    break
+                elif self.token.type == NONE:
+                    self.eat(NONE)
+                elif i == 5:
+                    if self.token.type == SOURCE:
+                        source_ = self.token.val
+                        self.eat(SOURCE)
 
-            if self.token.type == SOURCE:
-                source_ = self.token.val
-                self.eat(SOURCE)
-
-                if source_ == INPUT:
-                    try:
-                        p["source_"] = input()
-                    except EOFError:
-                        raise Exception("No input entered")
-            elif self.token.type == BOMB or self.token.type == NONE:
-                p["amplitude"] = self.token.val
-                self.eat(BOMB)
-
-            p["queue"] = self.token.val
-            self.eat(QUEUE)
-            p["jump"] = self.token.val
-            self.eat(BOMB)
+                        if source_ == INPUT:
+                            try:
+                                p["source_"] = input()
+                            except EOFError:
+                                raise Exception("No input entered")
+                    elif self.token.type == BOMB or self.token.type == NONE:
+                        p["amplitude"] = self.token.val
+                        self.eat(BOMB)
+                else:
+                    if self.token.type == EXPLORER_ORDER[i]:
+                        p[STRING_ORDER[i]] = self.token.val
+                        self.eat(self.token.type)
 
             if p["direction"] == BOTH:
                 del p["direction"]
@@ -235,7 +231,7 @@ class Explorer:
         self.wave_index = 0
 
         self.source = source_
-        self.is_sourced = self.source is not None
+        self.is_sourced = self.source is not NONE
 
         self.amplitude = None if self.is_sourced else 1 if amplitude == NONE else amplitude
         self.queue = PUSH if queue == NONE else queue
@@ -374,17 +370,7 @@ except IndexError:
 source = open(file).read()
 lines = source.split("\n")
 
-main = ""
-
-for i in range(len(lines)):
-    try:
-        main += lines[i][0]
-    except IndexError:
-        main += " "
-
-    lines[i] = lines[i][1:]
-
-tape = Tape(list(main))
+tape = Tape(len(lines) * [" "])
 
 last_explorers = []
 explorers = []
@@ -396,12 +382,19 @@ for j in range(len(lines)):
     explorers += parser.get_explorers(j)
 
 while True:
+
     if not len(explorers):
         if last_used:
+            if "-a" in sys.argv:
+                print()
+
             break
         else:
             explorers = last_explorers
             last_used = True
+
+    if "-a" in sys.argv:
+        print("".join(tape))
 
     for explorer in explorers:
         explorer.tick()

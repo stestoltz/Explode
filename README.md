@@ -1,28 +1,10 @@
 # Explode
-Explode is a WIP tape-based esolang that may or may not be Turing complete. Explore Explode at your own risk, because anything non-trivial may frustrate you more than you wish.
+Explode is a WIP tape-based esolang that is probably not Turing complete. Explore Explode at your own risk, because anything non-trivial may frustrate you more than you wish.
 
 ## Tape
 The tape in Explode is finite. Every access attempt has its access index modulated by the length of the tape, so you cannot attempt to read outside the tape.
 
-The tape starts out as the left column of each line in the program, and is printed when the program terminates. For example, the following prints `Hello, World!` in Explode:
-
-```
-H
-e
-l
-l
-o
-,
-
-W
-o
-r
-l
-d
-!
-```
-
-Any empty line becomes a space.
+The tape is printed when the program terminates. It starts out as as many spaces as there are lines in your source. You can only modify the tape with explorers
 
 ##### Manipulating the Tape
 
@@ -57,7 +39,7 @@ Explorers allow you to manipulate the tape. Explorers are placed to the right of
 <type><duration><direction><delay><action><source|amplitude><queue><jump>
 ```
 
-A space for a parameter usually indicates the default for that parameter.
+A space for a parameter usually indicates the default for that parameter. You may end the explorer creation statement early after the type is specified, and the rest will be filled in with defaults.
 
 Explorers move around on the tape. They start at their index in the source code, and move based on their parameters. They only interact with their current cell on the tape.
 
@@ -143,22 +125,22 @@ This section will be added to as I push this language more.
 
 **Hello, World!**
 
-Prints `Hello, World!`.
+Prints `Hello, World!`. Each explorer adds each character's index in ASCII to the current index.
 
 ```
-H
-e
-l
-l
-o
-,
- 
-W
-o
-r
-l
-d
-!
+@1_0+E
+@1_0+17
+@1_0+1e
+@1_0+1e
+@1_0+1h
+@1_0+c
+
+@1_0+T
+@1_0+1h
+@1_0+1k
+@1_0+1e
+@1_0+16
+@1_0+1
 ```
 
 **cat**
@@ -166,13 +148,5 @@ d
 Outputs one line of input.
 
 ```
- @ _ +?  
-```
-
-**(Broken) Addition**
-
-Adds two inputs, according to their indexes in the ASCII tape. Very tentative - does not carry if the sum is larger.
-
-```
- % _ +?  % _ +?> 
+@ _ +?
 ```
