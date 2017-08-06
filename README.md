@@ -71,7 +71,7 @@ The direction of an Explorer is how it will move on the tape.
 | --- | ---- | ----------- |
 | `_` | Down | Default. Move down (positive) in the tape. |
 | `^` | Up | Move up (negative) in the tape. |
-| `|` | Both | Creates two Explorers with exactly the same parameters, except that one moves up and one moves down. They may not play will with each other.
+| `\|` | Both | Creates two Explorers with exactly the same parameters, except that one moves up and one moves down. They may not play will with each other.
 
 Remember, when they reach the end of the tape, `Modify` and `Write` Explorers wrap on the tape, while `Extend` and `Insert` Explorers add to the tape.
 
